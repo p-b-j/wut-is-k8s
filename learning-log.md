@@ -4,7 +4,7 @@
 
 Installed [kind](https://kind.sigs.k8s.io/) and spun up a new cluster w/
 
-```bash
+```
 [pbj@meadow]~/code/wut-is-k8s $ kind create cluster -n mordor
 ```
 
@@ -129,3 +129,124 @@ Seems like `kind` gave me a real nice cluster setup out of the box (woo!)
 But I maybe missed some core cluster setup knowledge b/c of this :(
 I'm gonna stop my rabbit hole here. Maybe a fun future exercise would be to try to replace the kind
 cluster w/a handbuilt control plan/cluster of my own running in docker (idk how hard that is).
+
+## I wanna deploy something...
+Kinda like a hello world app...
+
+I know we use `helm` at MO, but I think that is something built on top of kubernetes.
+
+I wanna reach for maybe the simplest way to get a pod that runs [this hello world
+image](https://hub.docker.com/_/hello-world).
+
+Searching around I remember I need a node to be able to run a pod... let's see if I have any:
+
+```
+[pbj@meadow]~/code/wut-is-k8s $ kubectl get nodes
+NAME                   STATUS   ROLES           AGE   VERSION
+mordor-control-plane   Ready    control-plane   64m   v1.32.2
+```
+
+Seems like I can use the control plane for now. I could also spin up worker nodes w/`kind`
+([instructions](https://kind.sigs.k8s.io/docs/user/quick-start#advanced)).
+
+I'm gonna stick w/my one node for now. Maybe a fun future exercise is trying to manually spin
+up a new node from resource definitions... sounds tough.
+
+
+### Deploying hello-world
+
+Simple pod resource definition:
+
+```
+apiVersion: v1
+kind: Pod
+metadata:
+  name: hello-world
+spec:
+  containers:
+    - name: hello-world
+      image: hello-world
+```
+
+```
+[pbj@meadow]~/code/wut-is-k8s $ kubectl apply -f hello-world-pod.yaml`
+pod/hello-world created
+```
+
+That went easier than expected! Here are some events:
+
+```
+Events:
+  Type     Reason     Age                    From               Message
+  ----     ------     ----                   ----               -------
+  Normal   Scheduled  5m27s                  default-scheduler  Successfully assigned default/hello-world to mordor-control-plane
+  Normal   Pulled     5m24s                  kubelet            Successfully pulled image "hello-world" in 2.825s (2.825s including waiting). Image size: 17098 bytes.
+  Normal   Pulled     5m22s                  kubelet            Successfully pulled image "hello-world" in 927ms (927ms including waiting). Image size: 17098 bytes.
+  Normal   Pulled     5m8s                   kubelet            Successfully pulled image "hello-world" in 910ms (910ms including waiting). Image size: 17098 bytes.
+  Normal   Pulled     4m41s                  kubelet            Successfully pulled image "hello-world" in 939ms (939ms including waiting). Image size: 17098 bytes.
+  Normal   Pulled     3m47s                  kubelet            Successfully pulled image "hello-world" in 1.092s (1.092s including waiting). Image size: 17098 bytes.
+  Normal   Pulling    2m20s (x6 over 5m27s)  kubelet            Pulling image "hello-world"
+  Normal   Created    2m19s (x6 over 5m24s)  kubelet            Created container: hello-world
+  Normal   Started    2m19s (x6 over 5m24s)  kubelet            Started container hello-world
+  Normal   Pulled     2m19s                  kubelet            Successfully pulled image "hello-world" in 973ms (973ms including waiting). Image size: 17098 bytes.
+  Warning  BackOff    6s (x26 over 5m21s)    kubelet            Back-off restarting failed container hello-world in pod hello-world_default(d576c6b3-c32b-4d97-ad18-a5422820bdef)
+```
+
+Lmao forgot that my pod would be restarted. Let's change that by adding a `restartPolicy`
+
+```
+spec:
+  ...
+  restartPolicy: Never
+```
+
+Tried to apply again and it complained b/c I was updating a non-editable field. Learned about
+`delete`:
+
+```
+[pbj@meadow]~/code/wut-is-k8s $ kubectl delete -f hello-world-pod.yaml
+pod "hello-world" deleted
+```
+
+Re-applied. Worked like a charm:
+```
+[pbj@meadow]~/code/wut-is-k8s $ kubectl get pods
+NAME          READY   STATUS      RESTARTS   AGE
+hello-world   0/1     Completed   0          6s
+[pbj@meadow]~/code/wut-is-k8s $ kubectl logs hello-world
+
+Hello from Docker!
+This message shows that your installation appears to be working correctly.
+
+To generate this message, Docker took the following steps:
+ 1. The Docker client contacted the Docker daemon.
+ 2. The Docker daemon pulled the "hello-world" image from the Docker Hub.
+    (arm64v8)
+ 3. The Docker daemon created a new container from that image which runs the
+    executable that produces the output you are currently reading.
+ 4. The Docker daemon streamed that output to the Docker client, which sent it
+    to your terminal.
+
+To try something more ambitious, you can run an Ubuntu container with:
+ $ docker run -it ubuntu bash
+
+Share images, automate workflows, and more with a free Docker ID:
+ https://hub.docker.com/
+
+For more examples and ideas, visit:
+ https://docs.docker.com/get-started
+```
+
+Events show just the one run too. Nice!
+
+```
+  Type    Reason     Age   From               Message
+  ----    ------     ----  ----               -------
+  Normal  Scheduled  26s   default-scheduler  Successfully assigned default/hello-world to mordor-control-plane
+  Normal  Pulling    25s   kubelet            Pulling image "hello-world"
+  Normal  Pulled     24s   kubelet            Successfully pulled image "hello-world" in 980ms (980ms including waiting). Image size: 17098 bytes.
+  Normal  Created    24s   kubelet            Created container: hello-world
+  Normal  Started    24s   kubelet            Started container hello-world
+```
+
+Gonna stop for now. Not sure where I want to go next.
