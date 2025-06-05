@@ -108,7 +108,7 @@ according to these docs (which checks out based on the output of `kubectl config
 
 [AuthInfo resource docs](https://kubernetes.io/docs/reference/config-api/kubeconfig.v1/#AuthInfo)
 
-Random tangent: noticed the `v1` on all these kubeconfig docs pages... googled v2 and found 
+Random tangent: noticed the `v1` on all these kubeconfig docs pages... googled v2 and found
 [this](https://github.com/kubernetes/kubernetes/issues/30395) lmao
 
 Back to the definition...
@@ -250,3 +250,22 @@ Events show just the one run too. Nice!
 ```
 
 Gonna stop for now. Not sure where I want to go next.
+
+## What is a namespace?
+
+[kubernetes docs](https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/)
+
+Seems like just a way of segregating resources in our cluster.
+
+Certain resources belong to a namespace, and are unique by name/resource type in that namespace.
+
+Seems like you can use it to:
+* separate environments (e.g. dev vs staging vs prod)
+* separate user access (e.g. by team or app)
+
+~~interesting... honestly not sure about hosting all the stuff (dev staging prod) all together in one
+cluster, but I'm sure it just depends on your situation.~~
+
+^ got some help with how stuff might look in the real world. Seems like a multi-tenant cluster
+separated by namespaces is actually probably more common. At work we have some specific client
+restrictions that make it so that we don't want clients sharing clusters.
