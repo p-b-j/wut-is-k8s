@@ -24,7 +24,10 @@
       {
         devShells = {
           default = pkgs.mkShellNoCC {
-            packages = with pkgs; [ ];
+            packages = with pkgs; [
+              kind
+              kubectl
+            ];
 
           };
         };
