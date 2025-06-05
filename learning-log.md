@@ -155,7 +155,7 @@ up a new node from resource definitions... sounds tough.
 
 ### Deploying hello-world
 
-Simple pod resource definition:
+Simple pod resource manifest:
 
 ```
 apiVersion: v1
